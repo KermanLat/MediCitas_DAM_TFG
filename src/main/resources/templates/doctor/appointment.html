@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cita — MediCitas</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --cream: #f5f0e8; --white: #fdfcfa; --ink: #1a1a1a; --ink-light: #5a5a5a;
+            --sage: #4a7c59; --sage-light: #6a9c79; --sage-pale: #e8f0ea;
+            --border: #ddd8ce; --red: #c0392b; --red-pale: #fdf0ef; --sidebar-w: 260px;
+            --amber: #b45309; --amber-pale: #fef3c7; --amber-border: #fcd34d;
+            --blue: #1d4ed8; --blue-pale: #eff6ff; --blue-border: #bfdbfe;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--ink); display: flex; min-height: 100vh; }
+
+        /* Sidebar */
+        .sidebar { width: var(--sidebar-w); background: var(--ink); display: flex; flex-direction: column; position: fixed; top: 0; left: 0; bottom: 0; z-index: 100; }
+        .sidebar-brand { padding: 28px 24px 20px; border-bottom: 1px solid rgba(255,255,255,0.07); }
+        .brand-name { font-family: 'DM Serif Display', serif; font-size: 1.4rem; color: var(--white); }
+        .brand-name span { color: var(--sage-light); }
+        .brand-role { font-size: 0.7rem; color: rgba(255,255,255,0.35); letter-spacing: 0.08em; text-transform: uppercase; margin-top: 2px; }
+        .sidebar-doctor { padding: 20px 24px; border-bottom: 1px solid rgba(255,255,255,0.07); display: flex; align-items: center; gap: 12px; }
+        .doctor-avatar { width: 42px; height: 42px; border-radius: 50%; background: var(--sage); display: flex; align-items: center; justify-content: center; font-size: 1rem; color: white; font-weight: 600; flex-shrink: 0; overflow: hidden; }
+        .doctor-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .doctor-name { font-size: 0.88rem; font-weight: 600; color: var(--white); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; }
+        .doctor-specialty { font-size: 0.75rem; color: rgba(255,255,255,0.4); }
+        .sidebar-nav { flex: 1; padding: 16px 12px; display: flex; flex-direction: column; gap: 2px; }
+        .nav-label { font-size: 0.65rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.25); padding: 12px 12px 6px; }
+        .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; font-size: 0.87rem; color: rgba(255,255,255,0.55); text-decoration: none; transition: background 0.15s, color 0.15s; }
+        .nav-item:hover { background: rgba(255,255,255,0.06); color: var(--white); }
+        .nav-item.active { background: rgba(74,124,89,0.2); color: var(--sage-light); }
+        .nav-icon { font-size: 1rem; width: 20px; text-align: center; }
+        .nav-badge { margin-left: auto; background: var(--red); color: white; font-size: 0.65rem; font-weight: 700; padding: 2px 6px; border-radius: 10px; min-width: 18px; text-align: center; }
+        .sidebar-footer { padding: 16px 12px; border-top: 1px solid rgba(255,255,255,0.07); }
+        .btn-logout { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; font-size: 0.87rem; color: rgba(255,255,255,0.4); width: 100%; border: none; background: none; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: background 0.15s, color 0.15s; }
+        .btn-logout:hover { background: rgba(192,57,43,0.15); color: #e74c3c; }
+
+        /* Main */
+        .main { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; }
+        .topbar { background: var(--white); border-bottom: 1px solid var(--border); padding: 16px 32px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; }
+        .topbar-left { display: flex; align-items: center; gap: 12px; }
+        .back-btn { display: flex; align-items: center; gap: 6px; font-size: 0.82rem; color: var(--ink-light); text-decoration: none; transition: color 0.15s; }
+        .back-btn:hover { color: var(--sage); }
+        .topbar-divider { width: 1px; height: 20px; background: var(--border); }
+        .topbar-title { font-family: 'DM Serif Display', serif; font-size: 1.4rem; color: var(--ink); }
+        .topbar-right { display: flex; gap: 10px; align-items: center; }
+
+        /* Botón completar cita */
+        .btn-complete { padding: 9px 18px; border: none; border-radius: 10px; background: var(--sage); color: white; font-size: 0.85rem; font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif; display: flex; align-items: center; gap: 7px; transition: background 0.15s; }
+        .btn-complete:hover { background: var(--sage-light); }
+        .btn-complete:disabled { background: #aaa; cursor: not-allowed; }
+
+        /* Badge estado */
+        .status-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; }
+        .status-badge.completado { background: var(--sage-pale); color: var(--sage); border: 1px solid #b5d4be; }
+        .status-badge.programado { background: var(--amber-pale); color: var(--amber); border: 1px solid var(--amber-border); }
+        .status-badge.cancelado { background: var(--red-pale); color: var(--red); border: 1px solid #f5c6c2; }
+
+        .content { padding: 32px; display: flex; flex-direction: column; gap: 24px; }
+
+        /* Cabecera de la cita — similar a patient-header */
+        .appointment-header {
+            background: var(--white); border: 1px solid var(--border); border-radius: 14px;
+            padding: 28px; display: flex; align-items: center; gap: 24px;
+        }
+        .appt-icon {
+            width: 72px; height: 72px; border-radius: 14px;
+            background: var(--blue-pale); border: 2px solid var(--blue-border);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 2rem; flex-shrink: 0;
+        }
+        .appt-header-info { flex: 1; }
+        .appt-header-title { font-family: 'DM Serif Display', serif; font-size: 1.5rem; color: var(--ink); letter-spacing: -0.02em; }
+        .appt-header-meta { display: flex; gap: 16px; margin-top: 8px; flex-wrap: wrap; }
+        .appt-meta-item { font-size: 0.82rem; color: var(--ink-light); display: flex; align-items: center; gap: 5px; }
+        .appt-meta-item strong { color: var(--ink); font-weight: 600; }
+        .appt-header-right { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+
+        /* Cabecera del paciente */
+        .patient-header {
+            background: var(--white); border: 1px solid var(--border); border-radius: 14px;
+            padding: 28px; display: flex; align-items: center; gap: 24px;
+        }
+        .patient-avatar-lg {
+            width: 72px; height: 72px; border-radius: 50%;
+            background: var(--sage-pale); border: 2px solid var(--sage);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.8rem; font-weight: 600; color: var(--sage);
+            overflow: hidden; flex-shrink: 0;
+        }
+        .patient-avatar-lg img { width: 100%; height: 100%; object-fit: cover; }
+        .patient-header-info { flex: 1; }
+        .patient-header-name { font-family: 'DM Serif Display', serif; font-size: 1.4rem; color: var(--ink); letter-spacing: -0.02em; }
+        .patient-header-meta { display: flex; gap: 16px; margin-top: 6px; flex-wrap: wrap; }
+        .patient-meta-item { font-size: 0.8rem; color: var(--ink-light); display: flex; align-items: center; gap: 4px; }
+        .illness-badge { background: var(--sage-pale); color: var(--sage); font-size: 0.78rem; font-weight: 600; padding: 4px 12px; border-radius: 20px; flex-shrink: 0; }
+        .patient-link { font-size: 0.8rem; color: var(--sage); text-decoration: none; font-weight: 500; }
+        .patient-link:hover { text-decoration: underline; }
+
+        /* Grid */
+        .record-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .record-full { grid-column: 1 / -1; }
+
+        /* Sección */
+        .section { background: var(--white); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+        .section-header { padding: 16px 22px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+        .section-title { font-size: 0.95rem; font-weight: 600; color: var(--ink); }
+        .section-body { padding: 20px 22px; }
+
+        /* Campos */
+        .medical-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .field-item { display: flex; flex-direction: column; gap: 5px; }
+        .field-label { font-size: 0.75rem; font-weight: 600; color: var(--ink-light); letter-spacing: 0.04em; text-transform: uppercase; }
+        .field-value { font-size: 0.9rem; color: var(--ink); }
+        .field-value.empty { color: #bbb; font-style: italic; }
+        .field-value.full { grid-column: 1 / -1; }
+
+        /* Notas de sesión */
+        .notes-list { padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+        .note-card { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+        .note-header { padding: 10px 14px; background: var(--cream); display: flex; align-items: center; justify-content: space-between; }
+        .note-doctor { font-size: 0.82rem; font-weight: 600; color: var(--ink); }
+        .note-date { font-size: 0.75rem; color: var(--ink-light); }
+        .note-body { padding: 12px 14px; font-size: 0.88rem; color: var(--ink); line-height: 1.6; }
+        .note-actions { padding: 8px 14px; border-top: 1px solid var(--border); display: flex; gap: 8px; justify-content: flex-end; }
+        .btn-note-delete { font-size: 0.75rem; color: var(--red); border: none; background: none; cursor: pointer; font-family: 'DM Sans', sans-serif; }
+
+        /* Nueva nota */
+        .new-note-form { padding: 16px 22px; border-top: 1px solid var(--border); }
+        .new-note-form textarea { width: 100%; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-family: 'DM Sans', sans-serif; font-size: 0.88rem; resize: vertical; min-height: 90px; outline: none; transition: border-color 0.2s; }
+        .new-note-form textarea:focus { border-color: var(--sage); }
+        .btn-add-note { margin-top: 10px; padding: 9px 18px; background: var(--sage); color: white; border: none; border-radius: 8px; font-size: 0.85rem; font-weight: 500; cursor: pointer; font-family: 'DM Sans', sans-serif; }
+        .empty-notes { padding: 32px; text-align: center; color: var(--ink-light); font-size: 0.85rem; }
+
+        /* Alerta de cita completada */
+        .completed-banner {
+            background: var(--sage-pale); border: 1px solid #b5d4be; border-radius: 12px;
+            padding: 14px 20px; display: flex; align-items: center; gap: 12px;
+            font-size: 0.88rem; color: var(--sage); font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+
+<aside class="sidebar">
+    <div class="sidebar-brand">
+        <div class="brand-name">Medi<span>Citas</span></div>
+        <div class="brand-role">Portal del médico</div>
+    </div>
+    <div class="sidebar-doctor">
+        <div class="doctor-avatar">
+            <img th:if="${doctor.photoUrl}" th:src="${doctor.photoUrl}" alt="foto"/>
+            <span th:unless="${doctor.photoUrl}" th:text="${#strings.substring(doctor.nombre,0,1)}">D</span>
+        </div>
+        <div>
+            <div class="doctor-name" th:text="${doctor.nombre}">Dr. García</div>
+            <div class="doctor-specialty" th:text="${doctor.Especialidad}">Cardiología</div>
+        </div>
+    </div>
+    <nav class="sidebar-nav">
+        <div class="nav-label">Principal</div>
+        <a th:href="@{/doctor/dashboard}" class="nav-item"><span class="nav-icon">🏠</span> Dashboard</a>
+        <a th:href="@{/doctor/calendar}" class="nav-item active"><span class="nav-icon">📅</span> Calendario</a>
+        <a th:href="@{/doctor/patients}" class="nav-item"><span class="nav-icon">👥</span> Pacientes</a>
+        <div class="nav-label">Comunicación</div>
+        <a th:href="@{/doctor/messages}" class="nav-item">
+            <span class="nav-icon">✉</span> Buzón
+            <span class="nav-badge" th:if="${unreadMessages > 0}" th:text="${unreadMessages}">3</span>
+        </a>
+        <a th:href="@{/doctor/notifications}" class="nav-item">
+            <span class="nav-icon">🔔</span> Notificaciones
+            <span class="nav-badge" th:if="${unseenNotifications > 0}" th:text="${unseenNotifications}">2</span>
+        </a>
+        <div class="nav-label">Cuenta</div>
+        <a th:href="@{/doctor/profile}" class="nav-item"><span class="nav-icon">👤</span> Mi perfil</a>
+    </nav>
+    <div class="sidebar-footer">
+        <form th:action="@{/logout}" method="post">
+            <button type="submit" class="btn-logout">↩ Cerrar sesión</button>
+        </form>
+    </div>
+</aside>
+
+<main class="main">
+    <div class="topbar">
+        <div class="topbar-left">
+            <a th:href="@{/doctor/dashboard}" class="back-btn">← Dashboard</a>
+            <div class="topbar-divider"></div>
+            <div class="topbar-title">Detalle de cita</div>
+        </div>
+        <div class="topbar-right">
+            <!-- Botón completar (solo si está PROGRAMADO) -->
+            <form th:if="${cita.estado.name() == 'PROGRAMADO'}"
+                  th:action="@{/doctor/appointment/{id}/complete(id=${cita.id})}"
+                  method="post" style="display:inline">
+                <button type="submit" class="btn-complete"
+                        onclick="return confirm('¿Marcar esta cita como completada?')">
+                    ✓ Marcar como completada
+                </button>
+            </form>
+            <!-- Badge si ya está completada o cancelada -->
+            <span th:if="${cita.estado.name() == 'COMPLETADO'}" class="status-badge completado">
+                ✓ Completada
+            </span>
+            <span th:if="${cita.estado.name() == 'CANCELADO'}" class="status-badge cancelado">
+                ✗ Cancelada
+            </span>
+        </div>
+    </div>
+
+    <div class="content">
+
+        <!-- Banner si la cita ya fue completada -->
+        <div class="completed-banner" th:if="${cita.estado.name() == 'COMPLETADO'}">
+            ✅ Esta cita fue marcada como completada
+        </div>
+
+        <!-- Cabecera de la cita -->
+        <div class="appointment-header">
+            <div class="appt-icon">📋</div>
+            <div class="appt-header-info">
+                <div class="appt-header-title"
+                     th:text="${cita.peticion?.razon ?: 'Consulta general'}">Revisión cardiológica</div>
+                <div class="appt-header-meta">
+                    <div class="appt-meta-item">
+                        📅 <strong th:text="${#temporals.format(cita.fechaProgramada, 'EEEE d MMM yyyy')}">Lunes 16 mayo 2026</strong>
+                    </div>
+                    <div class="appt-meta-item">
+                        🕐 <strong th:text="${#temporals.format(cita.fechaProgramada, 'HH:mm')}">10:30</strong>
+                    </div>
+                    <div class="appt-meta-item" th:if="${cita.sala != null}">
+                        🚪 Sala <span th:text="${cita.sala}">A3</span>
+                    </div>
+                </div>
+            </div>
+            <div class="appt-header-right">
+                <span th:switch="${cita.estado.name()}">
+                    <span th:case="'PROGRAMADO'" class="status-badge programado">⏳ Programada</span>
+                    <span th:case="'COMPLETADO'" class="status-badge completado">✓ Completada</span>
+                    <span th:case="'CANCELADO'" class="status-badge cancelado">✗ Cancelada</span>
+                </span>
+            </div>
+        </div>
+
+        <!-- Cabecera del paciente -->
+        <div class="patient-header">
+            <div class="patient-avatar-lg">
+                <img th:if="${cita.paciente.photoUrl}" th:src="${cita.paciente.photoUrl}" alt="foto"/>
+                <span th:unless="${cita.paciente.photoUrl}"
+                      th:text="${#strings.substring(cita.paciente.nombre,0,1)}">A</span>
+            </div>
+            <div class="patient-header-info">
+                <div class="patient-header-name" th:text="${cita.paciente.nombre}">Ana García López</div>
+                <div class="patient-header-meta">
+                    <div class="patient-meta-item">📅 <span th:text="${cita.paciente.fechaNacimiento}">01/01/1990</span></div>
+                    <div class="patient-meta-item">📞 <span th:text="${cita.paciente.telefono ?: 'Sin teléfono'}">600 000 000</span></div>
+                    <div class="patient-meta-item">📧 <span th:text="${cita.paciente.email}">ana@email.com</span></div>
+                </div>
+                <a th:href="@{/doctor/patients/{id}(id=${cita.paciente.id})}"
+                   class="patient-link" style="margin-top:8px; display:inline-block">
+                    Ver expediente completo →
+                </a>
+            </div>
+            <div class="illness-badge"
+                 th:text="${record.enfermedadPrincipal ?: 'Sin diagnóstico'}">Hipertensión</div>
+        </div>
+
+        <div class="record-grid">
+
+            <!-- Datos de la cita -->
+            <div class="section">
+                <div class="section-header">
+                    <span class="section-title">📋 Información de la cita</span>
+                </div>
+                <div class="section-body">
+                    <div class="medical-fields">
+                        <div class="field-item">
+                            <div class="field-label">Fecha</div>
+                            <div class="field-value"
+                                 th:text="${#temporals.format(cita.fechaProgramada, 'd MMM yyyy')}">16 May 2026</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-label">Hora</div>
+                            <div class="field-value"
+                                 th:text="${#temporals.format(cita.fechaProgramada, 'HH:mm')}">10:30</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-label">Sala</div>
+                            <div class="field-value"
+                                 th:classappend="${cita.sala == null} ? 'empty'"
+                                 th:text="${cita.sala ?: '—'}">A3</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-label">Estado</div>
+                            <div class="field-value" th:text="${cita.estado}">PROGRAMADO</div>
+                        </div>
+                        <div class="field-item" style="grid-column: 1 / -1">
+                            <div class="field-label">Motivo</div>
+                            <div class="field-value"
+                                 th:classappend="${cita.peticion?.razon == null} ? 'empty'"
+                                 th:text="${cita.peticion?.razon ?: 'No especificado'}">Revisión anual</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Datos médicos del paciente (resumen) -->
+            <div class="section">
+                <div class="section-header">
+                    <span class="section-title">🩺 Resumen médico</span>
+                </div>
+                <div class="section-body">
+                    <div class="medical-fields">
+                        <div class="field-item">
+                            <div class="field-label">Enfermedad principal</div>
+                            <div class="field-value"
+                                 th:classappend="${record.enfermedadPrincipal == null} ? 'empty'"
+                                 th:text="${record.enfermedadPrincipal ?: 'No registrada'}">Hipertensión</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-label">Grupo sanguíneo</div>
+                            <div class="field-value"
+                                 th:classappend="${record.tipoSangre == null} ? 'empty'"
+                                 th:text="${record.tipoSangre ?: 'No registrado'}">A+</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-label">Alergias</div>
+                            <div class="field-value"
+                                 th:classappend="${record.alergias == null} ? 'empty'"
+                                 th:text="${record.alergias ?: 'Ninguna conocida'}">Penicilina</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-label">Medicación actual</div>
+                            <div class="field-value"
+                                 th:classappend="${record.medicamentosActuales == null} ? 'empty'"
+                                 th:text="${record.medicamentosActuales ?: 'Ninguna'}">Enalapril 10mg</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notas de sesión (ancho completo) -->
+            <div class="section record-full">
+                <div class="section-header">
+                    <span class="section-title">📝 Notas de esta cita</span>
+                    <span style="font-size:0.78rem;color:var(--ink-light)"
+                          th:text="${notes.size()} + ' notas'">0 notas</span>
+                </div>
+
+                <div class="notes-list" th:if="${!notes.isEmpty()}">
+                    <div class="note-card" th:each="nota : ${notes}">
+                        <div class="note-header">
+                            <span class="note-doctor" th:text="${nota.doctor.nombre}">Dr. García</span>
+                            <span class="note-date"
+                                  th:text="${#temporals.format(nota.fechaCreada, 'd MMM yyyy · HH:mm')}">
+                                16 May 2026 · 10:30
+                            </span>
+                        </div>
+                        <div class="note-body" th:text="${nota.contenido}">
+                            Contenido de la nota...
+                        </div>
+                        <div class="note-actions">
+                            <form th:action="@{/doctor/appointment/{citaId}/notes/{noteId}/delete(citaId=${cita.id},noteId=${nota.id})}" method="post">
+							    <button type="submit" class="btn-note-delete">🗑 Eliminar</button>
+							</form>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="empty-notes" th:if="${notes.isEmpty()}">
+                    No hay notas para esta cita todavía.
+                </div>
+
+                <!-- Añadir nueva nota -->
+                <div class="new-note-form">
+                    <form th:action="@{/doctor/appointment/{id}/notes(id=${cita.id})}" method="post">
+                        <textarea name="contenido" placeholder="Escribe una nota sobre esta cita..."></textarea>
+                        <button type="submit" class="btn-add-note">+ Añadir nota</button>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</main>
+
+</body>
+</html>

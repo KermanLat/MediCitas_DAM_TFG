@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pedir cita — MediCitas</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --cream: #f5f0e8; --white: #fdfcfa; --ink: #1a1a1a; --ink-light: #5a5a5a;
+            --sage: #4a7c59; --sage-light: #6a9c79; --sage-pale: #e8f0ea;
+            --blue: #2c5f8a; --blue-pale: #e8f0f8;
+            --border: #ddd8ce; --red: #c0392b; --sidebar-w: 260px;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--ink); display: flex; min-height: 100vh; }
+
+        /* Sidebar */
+        .sidebar { width: var(--sidebar-w); background: var(--ink); display: flex; flex-direction: column; position: fixed; top: 0; left: 0; bottom: 0; z-index: 100; }
+        .sidebar-brand { padding: 28px 24px 20px; border-bottom: 1px solid rgba(255,255,255,0.07); }
+        .brand-name { font-family: 'DM Serif Display', serif; font-size: 1.4rem; color: var(--white); }
+        .brand-name span { color: var(--sage-light); }
+        .brand-role { font-size: 0.7rem; color: rgba(255,255,255,0.35); letter-spacing: 0.08em; text-transform: uppercase; margin-top: 2px; }
+        .sidebar-patient { padding: 20px 24px; border-bottom: 1px solid rgba(255,255,255,0.07); display: flex; align-items: center; gap: 12px; }
+        .patient-avatar { width: 42px; height: 42px; border-radius: 50%; background: var(--blue); display: flex; align-items: center; justify-content: center; font-size: 1rem; color: white; font-weight: 600; flex-shrink: 0; overflow: hidden; }
+        .patient-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .patient-name { font-size: 0.88rem; font-weight: 600; color: var(--white); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; }
+        .patient-label { font-size: 0.75rem; color: rgba(255,255,255,0.4); }
+        .sidebar-nav { flex: 1; padding: 16px 12px; display: flex; flex-direction: column; gap: 2px; }
+        .nav-label { font-size: 0.65rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.25); padding: 12px 12px 6px; }
+        .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; font-size: 0.87rem; color: rgba(255,255,255,0.55); text-decoration: none; transition: background 0.15s, color 0.15s; }
+        .nav-item:hover { background: rgba(255,255,255,0.06); color: var(--white); }
+        .nav-item.active { background: rgba(74,124,89,0.2); color: var(--sage-light); }
+        .nav-icon { font-size: 1rem; width: 20px; text-align: center; }
+        .nav-badge { margin-left: auto; background: var(--red); color: white; font-size: 0.65rem; font-weight: 700; padding: 2px 6px; border-radius: 10px; min-width: 18px; text-align: center; }
+        .sidebar-footer { padding: 16px 12px; border-top: 1px solid rgba(255,255,255,0.07); }
+        .btn-logout { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; font-size: 0.87rem; color: rgba(255,255,255,0.4); width: 100%; border: none; background: none; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: background 0.15s, color 0.15s; }
+        .btn-logout:hover { background: rgba(192,57,43,0.15); color: #e74c3c; }
+
+        /* Main */
+        .main { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; }
+        .topbar { background: var(--white); border-bottom: 1px solid var(--border); padding: 16px 32px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; }
+        .topbar-title { font-family: 'DM Serif Display', serif; font-size: 1.4rem; color: var(--ink); }
+        .topbar-sub { font-size: 0.8rem; color: var(--ink-light); margin-top: 1px; }
+
+        .content { padding: 32px; flex: 1; display: flex; gap: 24px; }
+
+        /* Calendario */
+        .cal-section { flex: 1; }
+        .cal-wrapper { background: var(--white); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+        .cal-toolbar { padding: 16px 22px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+        .cal-nav-btn { width: 32px; height: 32px; border: 1px solid var(--border); border-radius: 8px; background: none; cursor: pointer; font-size: 0.9rem; display: flex; align-items: center; justify-content: center; }
+        .cal-nav-btn:hover { background: var(--cream); }
+        .cal-title { font-family: 'DM Serif Display', serif; font-size: 1.1rem; color: var(--ink); flex: 1; }
+        .btn-today { padding: 6px 12px; border: 1px solid var(--border); border-radius: 8px; background: none; font-size: 0.8rem; font-weight: 500; cursor: pointer; font-family: 'DM Sans', sans-serif; color: var(--ink-light); }
+
+        /* Mini calendario */
+        .mini-cal { padding: 20px; }
+        .cal-days-header { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; margin-bottom: 8px; }
+        .cal-day-name { font-size: 0.72rem; font-weight: 600; color: var(--ink-light); padding: 4px 0; }
+        .cal-days-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+        .cal-day {
+            aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+            border-radius: 8px; font-size: 0.85rem; cursor: pointer;
+            transition: background 0.15s; border: 1.5px solid transparent;
+        }
+        .cal-day:hover { background: var(--sage-pale); }
+        .cal-day.today { background: var(--sage); color: white; font-weight: 600; }
+        .cal-day.selected { border-color: var(--sage); color: var(--sage); font-weight: 600; }
+        .cal-day.other-month { color: #ccc; }
+        .cal-day.has-appt::after { content: ''; display: block; width: 4px; height: 4px; background: var(--sage); border-radius: 50%; position: absolute; bottom: 4px; }
+        .cal-day { position: relative; }
+
+        /* Panel formulario */
+        .form-panel { width: 340px; flex-shrink: 0; }
+        .form-card { background: var(--white); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; position: sticky; top: 105px; }
+        .form-card-header { padding: 18px 22px; border-bottom: 1px solid var(--border); }
+        .form-card-title { font-size: 0.95rem; font-weight: 600; color: var(--ink); }
+        .form-card-date { font-size: 0.8rem; color: var(--sage); margin-top: 3px; font-weight: 500; }
+        .form-card-body { padding: 20px 22px; display: flex; flex-direction: column; gap: 16px; }
+
+        .field { display: flex; flex-direction: column; gap: 6px; }
+        .field label { font-size: 0.76rem; font-weight: 600; color: var(--ink-light); text-transform: uppercase; letter-spacing: 0.04em; }
+        .field input, .field select, .field textarea {
+            padding: 10px 13px; border: 1.5px solid var(--border); border-radius: 10px;
+            font-family: 'DM Sans', sans-serif; font-size: 0.88rem; color: var(--ink);
+            outline: none; transition: border-color 0.2s; background: var(--white);
+        }
+        .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--sage); box-shadow: 0 0 0 3px rgba(74,124,89,0.1); }
+        .field textarea { resize: vertical; min-height: 80px; }
+
+        /* Días alternativos */
+        .alt-dates { display: flex; flex-direction: column; gap: 6px; }
+        .alt-date-row { display: flex; gap: 6px; align-items: center; }
+        .alt-date-row input { flex: 1; }
+        .btn-add-alt { font-size: 0.78rem; color: var(--sage); background: none; border: none; cursor: pointer; font-family: 'DM Sans', sans-serif; padding: 0; }
+
+        .btn-submit { width: 100%; padding: 12px; background: var(--sage); color: white; border: none; border-radius: 10px; font-family: 'DM Sans', sans-serif; font-size: 0.9rem; font-weight: 500; cursor: pointer; transition: background 0.15s; }
+        .btn-submit:hover { background: var(--sage-light); }
+
+        .alert-success { background: var(--sage-pale); border: 1px solid #b8d4bf; border-left: 3px solid var(--sage); border-radius: 8px; padding: 12px 16px; font-size: 0.85rem; color: var(--sage); margin-bottom: 16px; }
+    </style>
+</head>
+<body>
+
+<aside class="sidebar">
+    <div class="sidebar-brand">
+        <div class="brand-name">Medi<span>Citas</span></div>
+        <div class="brand-role">Portal del paciente</div>
+    </div>
+    <div class="sidebar-patient">
+        <div class="patient-avatar">
+            <img th:if="${patient.photoUrl}" th:src="${patient.photoUrl}" alt="foto"/>
+            <span th:unless="${patient.photoUrl}" th:text="${#strings.substring(patient.nombre,0,1)}">P</span>
+        </div>
+        <div>
+            <div class="patient-name" th:text="${patient.nombre}">Ana García</div>
+            <div class="patient-label">Paciente</div>
+        </div>
+    </div>
+    <nav class="sidebar-nav">
+        <div class="nav-label">Principal</div>
+        <a th:href="@{/patient/dashboard}" class="nav-item"><span class="nav-icon">🏠</span> Mi panel</a>
+        <a th:href="@{/patient/calendar}" class="nav-item active"><span class="nav-icon">📅</span> Pedir cita</a>
+        <div class="nav-label">Mis citas</div>
+        <a th:href="@{/patient/appointments}" class="nav-item">
+            <span class="nav-icon">📋</span> Próximas citas
+            <span class="nav-badge" th:if="${newAppointments > 0}" th:text="${newAppointments}">1</span>
+        </a>
+        <a th:href="@{/patient/requests}" class="nav-item">
+            <span class="nav-icon">⏳</span> Pendientes
+            <span class="nav-badge" th:if="${pendingCount > 0}" th:text="${pendingCount}">2</span>
+        </a>
+        <div class="nav-label">Cuenta</div>
+        <a th:href="@{/patient/notifications}" class="nav-item">
+            <span class="nav-icon">🔔</span> Notificaciones
+            <span class="nav-badge" th:if="${unseenNotifications > 0}" th:text="${unseenNotifications}">3</span>
+        </a>
+        <a th:href="@{/patient/profile}" class="nav-item"><span class="nav-icon">👤</span> Mi perfil</a>
+    </nav>
+    <div class="sidebar-footer">
+        <form th:action="@{/logout}" method="post">
+            <button type="submit" class="btn-logout">↩ Cerrar sesión</button>
+        </form>
+    </div>
+</aside>
+
+<main class="main">
+    <div class="topbar">
+        <div>
+            <div class="topbar-title">Pedir cita</div>
+            <div class="topbar-sub">Selecciona un día y rellena los datos</div>
+        </div>
+    </div>
+
+    <div class="content">
+
+        <!-- Calendario -->
+        <div class="cal-section">
+            <div class="cal-wrapper">
+                <div class="cal-toolbar">
+                    <button class="cal-nav-btn" onclick="changeMonth(-1)">‹</button>
+                    <button class="cal-nav-btn" onclick="changeMonth(1)">›</button>
+                    <span class="cal-title" id="cal-title">Mayo 2026</span>
+                    <button class="btn-today" onclick="goToToday()">Hoy</button>
+                </div>
+                <div class="mini-cal">
+                    <div class="cal-days-header">
+                        <div class="cal-day-name">Lu</div>
+                        <div class="cal-day-name">Ma</div>
+                        <div class="cal-day-name">Mi</div>
+                        <div class="cal-day-name">Ju</div>
+                        <div class="cal-day-name">Vi</div>
+                        <div class="cal-day-name">Sá</div>
+                        <div class="cal-day-name">Do</div>
+                    </div>
+                    <div class="cal-days-grid" id="cal-grid"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Formulario solicitud -->
+        <div class="form-panel">
+            <div class="form-card">
+                <div class="form-card-header">
+                    <div class="form-card-title">Nueva solicitud de cita</div>
+                    <div class="form-card-date" id="selected-date-label">Selecciona un día en el calendario</div>
+                </div>
+                <div class="form-card-body">
+
+                    <div class="alert-success" th:if="${param.sent}">
+                        ✓ Solicitud enviada. El médico la revisará en breve.
+                    </div>
+
+                    <form th:action="@{/patient/requests/new}" method="post" id="request-form">
+                        <input type="hidden" name="patientId" th:value="${patient.id}"/>
+                        <input type="hidden" name="preferredDate" id="preferred-date"/>
+
+                        <div style="display:flex;flex-direction:column;gap:14px">
+
+                            <div class="field">
+                                <label>Hora preferida</label>
+                                <input type="time" name="preferredTime" id="preferred-time" required/>
+                            </div>
+
+                            <div class="field">
+                                <label>Doctor</label>
+                                <select name="doctorId" required>
+                                    <option value="">Selecciona un doctor</option>
+                                    <option th:each="doc : ${doctors}"
+                                            th:value="${doc.id}"
+                                            th:text="${doc.nombre} + ' — ' + ${doc.especialidad}">
+                                        Dr. García — Cardiología
+                                    </option>
+                                </select>
+                            </div>
+
+                            <div class="field">
+                                <label>Motivo de la consulta</label>
+                                <textarea name="reason" placeholder="Describe brevemente el motivo..." required></textarea>
+                            </div>
+
+                            <div class="field">
+                                <label>Días alternativos <span style="font-weight:400;color:#bbb;font-size:0.72rem">(opcional)</span></label>
+                                <div class="alt-dates" id="alt-dates">
+                                    <div class="alt-date-row">
+                                        <input type="date" name="altDates"/>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn-add-alt" onclick="addAltDate()">+ Añadir otro día</button>
+                            </div>
+
+                            <button type="submit" class="btn-submit" id="submit-btn" disabled>
+                                Enviar solicitud
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script th:inline="javascript">
+    let currentDate = new Date();
+    let selectedDate = null;
+
+    const months = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+    const today = new Date();
+
+    function renderCalendar() {
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth();
+        document.getElementById('cal-title').textContent = months[month] + ' ' + year;
+
+        const grid = document.getElementById('cal-grid');
+        grid.innerHTML = '';
+
+        const firstDay = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const daysInPrev = new Date(year, month, 0).getDate();
+        const startDay = firstDay === 0 ? 6 : firstDay - 1;
+
+        // Días del mes anterior
+        for (let i = startDay - 1; i >= 0; i--) {
+            const d = document.createElement('div');
+            d.className = 'cal-day other-month';
+            d.textContent = daysInPrev - i;
+            grid.appendChild(d);
+        }
+
+        // Días del mes actual
+        for (let i = 1; i <= daysInMonth; i++) {
+            const d = document.createElement('div');
+            d.className = 'cal-day';
+            d.textContent = i;
+
+            const thisDate = new Date(year, month, i);
+            if (thisDate.toDateString() === today.toDateString()) d.classList.add('today');
+            if (selectedDate && thisDate.toDateString() === selectedDate.toDateString()) d.classList.add('selected');
+            if (thisDate < today) { d.style.opacity = '0.35'; d.style.cursor = 'not-allowed'; }
+            else {
+                d.addEventListener('click', () => selectDate(thisDate, i));
+            }
+            grid.appendChild(d);
+        }
+    }
+
+    function selectDate(date, day) {
+        selectedDate = date;
+        renderCalendar();
+
+        const label = `${day} de ${months[date.getMonth()]} ${date.getFullYear()}`;
+        document.getElementById('selected-date-label').textContent = label;
+
+        // Rellenar el input hidden con la fecha
+        const timeVal = document.getElementById('preferred-time').value || '09:00';
+        const iso = date.toISOString().split('T')[0] + 'T' + timeVal;
+        document.getElementById('preferred-date').value = iso;
+        document.getElementById('submit-btn').disabled = false;
+    }
+
+    function changeMonth(dir) {
+        currentDate.setMonth(currentDate.getMonth() + dir);
+        renderCalendar();
+    }
+
+    function goToToday() {
+        currentDate = new Date();
+        renderCalendar();
+    }
+
+    function addAltDate() {
+        const container = document.getElementById('alt-dates');
+        const row = document.createElement('div');
+        row.className = 'alt-date-row';
+        row.innerHTML = '<input type="date" name="altDates"/>';
+        container.appendChild(row);
+    }
+
+    // Actualizar fecha cuando cambia la hora
+    document.addEventListener('DOMContentLoaded', () => {
+        renderCalendar();
+        document.getElementById('preferred-time').addEventListener('change', function() {
+            if (selectedDate) {
+                const iso = selectedDate.toISOString().split('T')[0] + 'T' + this.value;
+                document.getElementById('preferred-date').value = iso;
+            }
+        });
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mis citas — MediCitas</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root { --cream:#f5f0e8; --white:#fdfcfa; --ink:#1a1a1a; --ink-light:#5a5a5a; --sage:#4a7c59; --sage-light:#6a9c79; --sage-pale:#e8f0ea; --blue:#2c5f8a; --border:#ddd8ce; --red:#c0392b; --red-pale:#fdf0ef; --sidebar-w:260px; }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--ink); display:flex; min-height:100vh; }
+        .sidebar { width:var(--sidebar-w); background:var(--ink); display:flex; flex-direction:column; position:fixed; top:0; left:0; bottom:0; z-index:100; }
+        .sidebar-brand { padding:28px 24px 20px; border-bottom:1px solid rgba(255,255,255,0.07); }
+        .brand-name { font-family:'DM Serif Display',serif; font-size:1.4rem; color:var(--white); }
+        .brand-name span { color:var(--sage-light); }
+        .brand-role { font-size:0.7rem; color:rgba(255,255,255,0.35); letter-spacing:0.08em; text-transform:uppercase; margin-top:2px; }
+        .sidebar-patient { padding:20px 24px; border-bottom:1px solid rgba(255,255,255,0.07); display:flex; align-items:center; gap:12px; }
+        .patient-avatar { width:42px; height:42px; border-radius:50%; background:var(--blue); display:flex; align-items:center; justify-content:center; font-size:1rem; color:white; font-weight:600; flex-shrink:0; overflow:hidden; }
+        .patient-avatar img { width:100%; height:100%; object-fit:cover; }
+        .patient-name { font-size:0.88rem; font-weight:600; color:var(--white); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:150px; }
+        .patient-label { font-size:0.75rem; color:rgba(255,255,255,0.4); }
+        .sidebar-nav { flex:1; padding:16px 12px; display:flex; flex-direction:column; gap:2px; }
+        .nav-label { font-size:0.65rem; font-weight:600; letter-spacing:0.1em; text-transform:uppercase; color:rgba(255,255,255,0.25); padding:12px 12px 6px; }
+        .nav-item { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px; font-size:0.87rem; color:rgba(255,255,255,0.55); text-decoration:none; transition:background 0.15s, color 0.15s; }
+        .nav-item:hover { background:rgba(255,255,255,0.06); color:var(--white); }
+        .nav-item.active { background:rgba(74,124,89,0.2); color:var(--sage-light); }
+        .nav-icon { font-size:1rem; width:20px; text-align:center; }
+        .nav-badge { margin-left:auto; background:var(--red); color:white; font-size:0.65rem; font-weight:700; padding:2px 6px; border-radius:10px; min-width:18px; text-align:center; }
+        .sidebar-footer { padding:16px 12px; border-top:1px solid rgba(255,255,255,0.07); }
+        .btn-logout { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px; font-size:0.87rem; color:rgba(255,255,255,0.4); width:100%; border:none; background:none; cursor:pointer; font-family:'DM Sans',sans-serif; transition:background 0.15s, color 0.15s; }
+        .btn-logout:hover { background:rgba(192,57,43,0.15); color:#e74c3c; }
+        .main { margin-left:var(--sidebar-w); flex:1; display:flex; flex-direction:column; }
+        .topbar { background:var(--white); border-bottom:1px solid var(--border); padding:16px 32px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:50; }
+        .topbar-title { font-family:'DM Serif Display',serif; font-size:1.4rem; color:var(--ink); }
+        .topbar-sub { font-size:0.8rem; color:var(--ink-light); margin-top:1px; }
+        .btn-new { padding:9px 16px; background:var(--sage); color:white; border:none; border-radius:10px; font-family:'DM Sans',sans-serif; font-size:0.85rem; font-weight:500; cursor:pointer; text-decoration:none; }
+        .content { padding:32px; }
+
+        /* Lista de citas */
+        .appt-list { display:flex; flex-direction:column; gap:14px; }
+
+        .appt-card {
+            background:var(--white); border:1px solid var(--border); border-radius:14px;
+            padding:22px 24px; display:flex; align-items:center; gap:20px;
+        }
+
+        .appt-date {
+            text-align:center; min-width:52px;
+            background:var(--sage-pale); border-radius:10px; padding:10px 8px;
+        }
+        .appt-day { font-family:'DM Serif Display',serif; font-size:1.6rem; color:var(--sage); line-height:1; }
+        .appt-month { font-size:0.7rem; color:var(--sage-light); text-transform:uppercase; letter-spacing:0.06em; margin-top:2px; }
+
+        .appt-vline { width:1px; height:50px; background:var(--border); flex-shrink:0; }
+
+        .appt-info { flex:1; }
+        .appt-doctor { font-size:1rem; font-weight:600; color:var(--ink); }
+        .appt-specialty { font-size:0.8rem; color:var(--ink-light); margin-top:2px; }
+        .appt-meta { display:flex; gap:12px; margin-top:10px; flex-wrap:wrap; }
+        .appt-meta-item { display:flex; align-items:center; gap:5px; font-size:0.78rem; color:var(--ink-light); }
+
+        .appt-status { padding:4px 12px; border-radius:20px; font-size:0.72rem; font-weight:600; flex-shrink:0; }
+        .status-scheduled { background:var(--sage-pale); color:var(--sage); }
+        .status-completed { background:#f0f0f0; color:#888; }
+        .status-cancelled { background:var(--red-pale); color:var(--red); }
+
+        .appt-actions { display:flex; flex-direction:column; gap:8px; flex-shrink:0; }
+        .btn-cancel { padding:7px 14px; border:1px solid #f5c6c2; border-radius:8px; background:none; color:var(--red); font-size:0.78rem; font-weight:500; cursor:pointer; font-family:'DM Sans',sans-serif; white-space:nowrap; }
+        .btn-cancel:hover { background:var(--red-pale); }
+
+        .empty-state { padding:80px 24px; text-align:center; color:var(--ink-light); }
+        .empty-icon { font-size:2.5rem; margin-bottom:12px; }
+        .empty-title { font-family:'DM Serif Display',serif; font-size:1.3rem; color:var(--ink); margin-bottom:6px; }
+        .empty-text { font-size:0.85rem; margin-bottom:16px; }
+        .btn-empty { display:inline-block; padding:10px 20px; background:var(--sage); color:white; border-radius:10px; font-size:0.85rem; text-decoration:none; font-weight:500; }
+        
+	</style>
+</head>
+<body>
+
+<aside class="sidebar">
+    <div class="sidebar-brand"><div class="brand-name">Medi<span>Citas</span></div><div class="brand-role">Portal del paciente</div></div>
+    <div class="sidebar-patient">
+        <div class="patient-avatar">
+            <img th:if="${patient.photoUrl}" th:src="${patient.photoUrl}" alt="foto"/>
+            <span th:unless="${patient.photoUrl}" th:text="${#strings.substring(patient.nombre,0,1)}">P</span>
+        </div>
+        <div><div class="patient-name" th:text="${patient.nombre}">Ana</div><div class="patient-label">Paciente</div></div>
+    </div>
+    <nav class="sidebar-nav">
+        <div class="nav-label">Principal</div>
+        <a th:href="@{/patient/dashboard}" class="nav-item"><span class="nav-icon">🏠</span> Mi panel</a>
+        <a th:href="@{/patient/calendar}" class="nav-item"><span class="nav-icon">📅</span> Pedir cita</a>
+        <div class="nav-label">Mis citas</div>
+        <a th:href="@{/patient/appointments}" class="nav-item active"><span class="nav-icon">📋</span> Próximas citas</a>
+        <a th:href="@{/patient/requests}" class="nav-item">
+            <span class="nav-icon">⏳</span> Pendientes
+            <span class="nav-badge" th:if="${pendingCount > 0}" th:text="${pendingCount}">2</span>
+        </a>
+        <div class="nav-label">Cuenta</div>
+        <a th:href="@{/patient/notifications}" class="nav-item">
+            <span class="nav-icon">🔔</span> Notificaciones
+            <span class="nav-badge" th:if="${unseenNotifications > 0}" th:text="${unseenNotifications}">3</span>
+        </a>
+        <a th:href="@{/patient/profile}" class="nav-item"><span class="nav-icon">👤</span> Mi perfil</a>
+    </nav>
+    <div class="sidebar-footer">
+        <form th:action="@{/logout}" method="post">
+            <button type="submit" class="btn-logout">↩ Cerrar sesión</button>
+        </form>
+    </div>
+</aside>
+
+<main class="main">
+    <div class="topbar">
+        <div>
+            <div class="topbar-title">Próximas citas</div>
+            <div class="topbar-sub" th:text="${appointments.size()} + ' citas confirmadas'">0 citas</div>
+        </div>
+        <a th:href="@{/patient/calendar}" class="btn-new">+ Pedir cita</a>
+    </div>
+
+    <div class="content">
+        <div class="appt-list" th:if="${!appointments.isEmpty()}">
+            <div class="appt-card" th:each="appt : ${appointments}">
+
+                <div class="appt-date">
+                    <div class="appt-day" th:text="${#temporals.format(appt.fechaProgramada,'d')}">20</div>
+                    <div class="appt-month" th:text="${#temporals.format(appt.fechaProgramada,'MMM')}">May</div>
+                </div>
+                <div class="appt-vline"></div>
+                <div class="appt-info">
+                    <div class="appt-doctor" th:text="${appt.doctor.nombre}">Dr. Martínez</div>
+                    <div class="appt-specialty" th:text="${appt.doctor.especialidad}">Cardiología</div>
+                    <div class="appt-meta">
+                        <div class="appt-meta-item">🕐 <span th:text="${#temporals.format(appt.fechaProgramada,'HH:mm')}">10:30</span></div>
+                        <div class="appt-meta-item">📍 <span th:text="'Sala ' + ${appt.sala}">Sala 3</span></div>
+                    </div>
+                </div>
+                <div th:class="'appt-status ' + (${appt.estado.name() == 'PROGRAMADO'} ? 'status-scheduled' : (${appt.estado.name() == 'COMPLETADO'} ? 'status-completed' : 'status-cancelled'))"
+                     th:text="${appt.estado.name() == 'PROGRAMADO'} ? 'Confirmada' : (${appt.estado.name() == 'COMPLETADO'} ? 'Completada' : 'Cancelada')">
+                    Confirmada
+                </div>
+                <div class="appt-actions" th:if="${appt.estado.name() == 'PROGRAMADO'}">
+                    <form th:action="@{/patient/appointments/{id}/cancel(id=${appt.id})}" method="post">
+                        <button type="submit" class="btn-cancel"
+                                onclick="return confirm('¿Cancelar esta cita?')">Cancelar</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="empty-state" th:if="${appointments.isEmpty()}">
+            <div class="empty-icon">📭</div>
+            <div class="empty-title">No tienes citas próximas</div>
+            <div class="empty-text">Pide una cita con tu médico cuando lo necesites.</div>
+            <a th:href="@{/patient/calendar}" class="btn-empty">Pedir cita</a>
+        </div>
+    </div>
+</main>
+</body>
+</html>

@@ -1,0 +1,1225 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard — MediCitas</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --cream: #f5f0e8;
+            --white: #fdfcfa;
+            --ink: #1a1a1a;
+            --ink-light: #5a5a5a;
+            --sage: #4a7c59;
+            --sage-light: #6a9c79;
+            --sage-pale: #e8f0ea;
+            --border: #ddd8ce;
+            --red: #c0392b;
+            --red-pale: #fdf0ef;
+            --yellow: #d4a017;
+            --yellow-pale: #fef9ec;
+            --sidebar-w: 260px;
+        }
+
+        * { margin:0; padding:0; box-sizing:border-box; }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--cream);
+            color: var(--ink);
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* ── Sidebar ──────────────────────────────────────────────── */
+        .sidebar {
+            width: var(--sidebar-w);
+            background: var(--ink);
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            top: 0; left: 0; bottom: 0;
+            z-index: 100;
+        }
+
+        .sidebar-brand {
+            padding: 28px 24px 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.07);
+        }
+
+        .brand-name {
+            font-family: 'DM Serif Display', serif;
+            font-size: 1.4rem;
+            color: var(--white);
+        }
+
+        .brand-name span { color: var(--sage-light); }
+
+        .brand-role {
+            font-size: 0.7rem;
+            color: rgba(255,255,255,0.35);
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            margin-top: 2px;
+        }
+
+        /* Doctor info */
+        .sidebar-doctor {
+            padding: 20px 24px;
+            border-bottom: 1px solid rgba(255,255,255,0.07);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .doctor-avatar {
+            width: 42px; height: 42px;
+            border-radius: 50%;
+            background: var(--sage);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1rem;
+            color: white;
+            font-weight: 600;
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+
+        .doctor-avatar img {
+            width: 100%; height: 100%;
+            object-fit: cover;
+        }
+
+        .doctor-info {}
+        .doctor-name {
+            font-size: 0.88rem;
+            font-weight: 600;
+            color: var(--white);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 150px;
+        }
+
+        .doctor-specialty {
+            font-size: 0.75rem;
+            color: rgba(255,255,255,0.4);
+        }
+
+        /* Nav */
+        .sidebar-nav {
+            flex: 1;
+            padding: 16px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .nav-label {
+            font-size: 0.65rem;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.25);
+            padding: 12px 12px 6px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            font-size: 0.87rem;
+            color: rgba(255,255,255,0.55);
+            text-decoration: none;
+            transition: background 0.15s, color 0.15s;
+            position: relative;
+        }
+
+        .nav-item:hover {
+            background: rgba(255,255,255,0.06);
+            color: var(--white);
+        }
+
+        .nav-item.active {
+            background: rgba(74,124,89,0.2);
+            color: var(--sage-light);
+        }
+
+        .nav-icon { font-size: 1rem; width: 20px; text-align: center; }
+
+        .nav-badge {
+            margin-left: auto;
+            background: var(--red);
+            color: white;
+            font-size: 0.65rem;
+            font-weight: 700;
+            padding: 2px 6px;
+            border-radius: 10px;
+            min-width: 18px;
+            text-align: center;
+        }
+
+        /* Logout */
+        .sidebar-footer {
+            padding: 16px 12px;
+            border-top: 1px solid rgba(255,255,255,0.07);
+        }
+
+        .btn-logout {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            font-size: 0.87rem;
+            color: rgba(255,255,255,0.4);
+            text-decoration: none;
+            transition: background 0.15s, color 0.15s;
+            width: 100%;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        .btn-logout:hover {
+            background: rgba(192,57,43,0.15);
+            color: #e74c3c;
+        }
+
+        /* ── Main content ─────────────────────────────────────────── */
+        .main {
+            margin-left: var(--sidebar-w);
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Topbar */
+        .topbar {
+            background: var(--white);
+            border-bottom: 1px solid var(--border);
+            padding: 16px 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+
+        .topbar-title {
+            font-family: 'DM Serif Display', serif;
+            font-size: 1.4rem;
+            color: var(--ink);
+            letter-spacing: -0.02em;
+        }
+
+        .topbar-date {
+            font-size: 0.8rem;
+            color: var(--ink-light);
+            margin-top: 1px;
+        }
+
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .notif-btn {
+            position: relative;
+            width: 36px; height: 36px;
+            border-radius: 50%;
+            background: var(--cream);
+            border: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+            font-size: 1rem;
+            text-decoration: none;
+            color: var(--ink);
+            transition: background 0.15s;
+        }
+
+        .notif-btn:hover { background: var(--sage-pale); }
+
+        .notif-dot {
+            position: absolute;
+            top: 4px; right: 4px;
+            width: 8px; height: 8px;
+            background: var(--red);
+            border-radius: 50%;
+            border: 2px solid var(--white);
+        }
+
+        /* Content */
+        .content {
+            padding: 32px;
+            flex: 1;
+        }
+
+        /* Stats row */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .stat-card {
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 20px 22px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--ink-light);
+            font-weight: 500;
+            letter-spacing: 0.02em;
+        }
+
+        .stat-value {
+            font-family: 'DM Serif Display', serif;
+            font-size: 2rem;
+            color: var(--ink);
+            letter-spacing: -0.03em;
+            line-height: 1;
+        }
+
+        .stat-sub {
+            font-size: 0.75rem;
+            color: var(--sage);
+            font-weight: 500;
+        }
+
+        /* Grid principal */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            gap: 20px;
+        }
+
+        /* Sección */
+        .section {
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            overflow: hidden;
+        }
+
+        .section-header {
+            padding: 18px 22px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .section-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--ink);
+        }
+
+        .section-meta {
+            font-size: 0.78rem;
+            color: var(--ink-light);
+        }
+
+        /* Tarjetas de cita del día */
+        .appointment-list {
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .appointment-card {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 14px 16px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            cursor: pointer;
+            transition: border-color 0.15s, background 0.15s;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .appointment-card:hover {
+            border-color: var(--sage);
+            background: var(--sage-pale);
+        }
+
+        .appt-time {
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: var(--sage);
+            min-width: 44px;
+            text-align: center;
+        }
+
+        .appt-divider {
+            width: 1px;
+            height: 36px;
+            background: var(--border);
+        }
+
+        .appt-info { flex: 1; }
+
+        .appt-patient {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--ink);
+        }
+
+        .appt-illness {
+            font-size: 0.78rem;
+            color: var(--ink-light);
+            margin-top: 2px;
+        }
+
+        .appt-room {
+            font-size: 0.75rem;
+            color: var(--ink-light);
+            background: var(--cream);
+            padding: 3px 8px;
+            border-radius: 6px;
+            white-space: nowrap;
+        }
+
+        .appt-status {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .appt-status.scheduled { background: var(--sage); }
+        .appt-status.completed { background: #bbb; }
+
+        /* Empty state */
+        .empty-state {
+            padding: 48px 24px;
+            text-align: center;
+            color: var(--ink-light);
+        }
+
+        .empty-icon { font-size: 2.5rem; margin-bottom: 10px; }
+        .empty-text { font-size: 0.88rem; }
+
+        /* Solicitudes pendientes */
+        .request-list {
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .request-card {
+            padding: 14px 16px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .request-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .request-patient {
+            font-size: 0.88rem;
+            font-weight: 600;
+            color: var(--ink);
+        }
+
+        .request-date {
+            font-size: 0.75rem;
+            color: var(--ink-light);
+        }
+
+        .request-reason {
+            font-size: 0.8rem;
+            color: var(--ink-light);
+            line-height: 1.4;
+        }
+
+        .request-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-accept {
+            flex: 1;
+            padding: 7px;
+            background: var(--sage);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            font-family: 'DM Sans', sans-serif;
+            transition: background 0.15s;
+        }
+
+        .btn-accept:hover { background: var(--sage-light); }
+
+        .btn-reject {
+            flex: 1;
+            padding: 7px;
+            background: transparent;
+            color: var(--red);
+            border: 1px solid #f5c6c2;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            font-family: 'DM Sans', sans-serif;
+            transition: background 0.15s;
+        }
+
+        .btn-reject:hover { background: var(--red-pale); }
+
+        .btn-info {
+            padding: 7px 12px;
+            background: transparent;
+            color: var(--ink-light);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            font-family: 'DM Sans', sans-serif;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .btn-info:hover { background: var(--cream); }
+
+        /* Pending badge */
+        .pending-badge {
+            background: var(--yellow-pale);
+            color: var(--yellow);
+            border: 1px solid #f5e4a0;
+            font-size: 0.7rem;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 20px;
+        }
+
+        /* ── Modal / Dialog ───────────────────────────────────────── */
+        .modal-backdrop {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(26,26,26,0.45);
+            backdrop-filter: blur(3px);
+            z-index: 200;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-backdrop.open {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--white);
+            border-radius: 18px;
+            width: 520px;
+            max-width: calc(100vw - 40px);
+            max-height: calc(100vh - 60px);
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.18), 0 4px 16px rgba(0,0,0,0.08);
+            animation: modal-in 0.18s ease;
+        }
+
+        @keyframes modal-in {
+            from { opacity: 0; transform: scale(0.96) translateY(8px); }
+            to   { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .modal-header {
+            padding: 22px 24px 16px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .modal-title {
+            font-family: 'DM Serif Display', serif;
+            font-size: 1.15rem;
+            color: var(--ink);
+            letter-spacing: -0.01em;
+        }
+
+        .modal-subtitle {
+            font-size: 0.78rem;
+            color: var(--ink-light);
+            margin-top: 3px;
+        }
+
+        .modal-close {
+            width: 30px; height: 30px;
+            border-radius: 50%;
+            border: none;
+            background: var(--cream);
+            color: var(--ink-light);
+            font-size: 1rem;
+            cursor: pointer;
+            flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            transition: background 0.15s;
+            line-height: 1;
+        }
+
+        .modal-close:hover { background: var(--border); }
+
+        .modal-body {
+            padding: 20px 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        /* Info row inside modal */
+        .modal-info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .modal-info-item {
+            background: var(--cream);
+            border-radius: 10px;
+            padding: 12px 14px;
+        }
+
+        .modal-info-label {
+            font-size: 0.68rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            color: var(--ink-light);
+            margin-bottom: 4px;
+        }
+
+        .modal-info-value {
+            font-size: 0.88rem;
+            font-weight: 500;
+            color: var(--ink);
+        }
+
+        .modal-info-item.full {
+            grid-column: 1 / -1;
+        }
+
+        /* Date selector */
+        .modal-section-label {
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--ink);
+            margin-bottom: 8px;
+        }
+
+        .date-options {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .date-option {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 14px;
+            border-radius: 10px;
+            border: 1.5px solid var(--border);
+            cursor: pointer;
+            transition: border-color 0.15s, background 0.15s;
+        }
+
+        .date-option:has(input:checked) {
+            border-color: var(--sage);
+            background: var(--sage-pale);
+        }
+
+        .date-option input[type="radio"] {
+            accent-color: var(--sage);
+            width: 16px; height: 16px;
+            flex-shrink: 0;
+        }
+
+        .date-option-label {
+            font-size: 0.85rem;
+            color: var(--ink);
+            flex: 1;
+        }
+
+        .date-option-badge {
+            font-size: 0.65rem;
+            font-weight: 600;
+            padding: 2px 7px;
+            border-radius: 20px;
+            background: var(--yellow-pale);
+            color: var(--yellow);
+            border: 1px solid #f5e4a0;
+        }
+
+        .date-option-badge.preferred {
+            background: var(--sage-pale);
+            color: var(--sage);
+            border-color: #b6d4be;
+        }
+
+        /* Room input */
+        .modal-input {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1.5px solid var(--border);
+            border-radius: 10px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.88rem;
+            color: var(--ink);
+            background: var(--white);
+            transition: border-color 0.15s;
+            outline: none;
+        }
+
+        .modal-input:focus {
+            border-color: var(--sage);
+        }
+
+        /* Footer buttons */
+        .modal-footer {
+            padding: 16px 24px 22px;
+            display: flex;
+            gap: 10px;
+            border-top: 1px solid var(--border);
+        }
+
+        .modal-btn-cancel {
+            flex: 1;
+            padding: 10px;
+            background: transparent;
+            color: var(--ink-light);
+            border: 1.5px solid var(--border);
+            border-radius: 10px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.88rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .modal-btn-cancel:hover { background: var(--cream); }
+
+        .modal-btn-accept {
+            flex: 2;
+            padding: 10px;
+            background: var(--sage);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.88rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .modal-btn-accept:hover { background: var(--sage-light); }
+    </style>
+</head>
+<body>
+
+<!-- ── Sidebar ───────────────────────────────────────────────────────────── -->
+<aside class="sidebar">
+    <div class="sidebar-brand">
+        <div class="brand-name">Medi<span>Citas</span></div>
+        <div class="brand-role">Portal del médico</div>
+    </div>
+
+    <div class="sidebar-doctor">
+        <div class="doctor-avatar">
+            <img th:if="${doctor.photoUrl}" th:src="${doctor.photoUrl}" alt="foto"/>
+            <span th:unless="${doctor.photoUrl}"
+                  th:text="${#strings.substring(doctor.nombre, 0, 1)}">D</span>
+        </div>
+        <div class="doctor-info">
+            <div class="doctor-name" th:text="${doctor.nombre}">Dr. García</div>
+            <div class="doctor-specialty" th:text="${doctor.especialidad}">Cardiología</div>
+        </div>
+    </div>
+
+    <nav class="sidebar-nav">
+        <div class="nav-label">Principal</div>
+        <a th:href="@{/doctor/dashboard}" class="nav-item active">
+            <span class="nav-icon">🏠</span> Dashboard
+        </a>
+        <a th:href="@{/doctor/calendar}" class="nav-item">
+            <span class="nav-icon">📅</span> Calendario
+        </a>
+        <a th:href="@{/doctor/patients}" class="nav-item">
+            <span class="nav-icon">👥</span> Pacientes
+        </a>
+
+        <div class="nav-label">Comunicación</div>
+        <a th:href="@{/doctor/messages}" class="nav-item">
+            <span class="nav-icon">✉</span> Buzón
+            <span class="nav-badge" th:if="${unreadMessages > 0}"
+                  th:text="${unreadMessages}">3</span>
+        </a>
+        <a th:href="@{/doctor/notifications}" class="nav-item">
+            <span class="nav-icon">🔔</span> Notificaciones
+            <span class="nav-badge" th:if="${unseenNotifications > 0}"
+                  th:text="${unseenNotifications}">2</span>
+        </a>
+
+        <div class="nav-label">Cuenta</div>
+        <a th:href="@{/doctor/profile}" class="nav-item">
+            <span class="nav-icon">👤</span> Mi perfil
+        </a>
+    </nav>
+
+    <div class="sidebar-footer">
+        <form th:action="@{/logout}" method="post">
+            <button type="submit" class="btn-logout">
+                <span>↩</span> Cerrar sesión
+            </button>
+        </form>
+    </div>
+</aside>
+
+<!-- ── Main ─────────────────────────────────────────────────────────────── -->
+<main class="main">
+
+    <!-- Topbar -->
+    <div class="topbar">
+        <div>
+            <div class="topbar-title">Buenos días, <span th:text="${#strings.substringBefore(doctor.nombre, ' ')}">Doctor</span> 👋</div>
+            <div class="topbar-date" th:text="${#temporals.format(#temporals.createNow(), 'EEEE, d MMMM yyyy')}">
+                Lunes, 16 de mayo de 2026
+            </div>
+        </div>
+        <div class="topbar-right">
+            <a th:href="@{/doctor/notifications}" class="notif-btn">
+                🔔
+                <span class="notif-dot" th:if="${unseenNotifications > 0}"></span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Content -->
+    <div class="content">
+
+        <!-- Stats -->
+        <div class="stats-row">
+            <div class="stat-card">
+                <div class="stat-label">Citas hoy</div>
+                <div class="stat-value" th:text="${todayAppointments.size()}">0</div>
+                <div class="stat-sub">programadas</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Solicitudes pendientes</div>
+                <div class="stat-value" th:text="${pendingRequests.size()}">0</div>
+                <div class="stat-sub">por aceptar</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Mensajes sin leer</div>
+                <div class="stat-value" th:text="${unreadMessages}">0</div>
+                <div class="stat-sub">de otros médicos</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Total pacientes</div>
+                <div class="stat-value" th:text="${totalPatients}">0</div>
+                <div class="stat-sub">en tu expediente</div>
+            </div>
+        </div>
+
+        <!-- Dashboard grid -->
+        <div class="dashboard-grid">
+
+            <!-- Citas del día -->
+            <div class="section">
+                <div class="section-header">
+                    <span class="section-title">Citas de hoy</span>
+                    <span class="section-meta"
+                          th:text="${todayAppointments.size()} + ' citas'">0 citas</span>
+                </div>
+
+                <div class="appointment-list" th:if="${!todayAppointments.isEmpty()}">
+                    <a th:each="appt : ${todayAppointments}"
+                       th:href="@{/doctor/appointment/{id}(id=${appt.id})}"
+                       class="appointment-card">
+
+                        <div class="appt-time"
+                             th:text="${#temporals.format(appt.fechaProgramada, 'HH:mm')}">
+                            09:00
+                        </div>
+                        <div class="appt-divider"></div>
+                        <div class="appt-info">
+                            <div class="appt-patient" th:text="${appt.paciente.nombre}">
+                                Ana García
+                            </div>
+                            <div class="appt-illness" th:text="${appt.paciente.historialMedico?.enfermedadPrincipal}">
+                                Hipertensión
+                            </div>
+                        </div>
+                        <div class="appt-room" th:text="'Sala ' + ${appt.sala}">Sala 3</div>
+                        <div class="appt-status scheduled"
+                             th:classappend="${appt.estado == 'COMPLETADO'} ? 'completed' : 'scheduled'">
+                        </div>
+                    </a>
+                </div>
+
+                <div class="empty-state" th:if="${todayAppointments.isEmpty()}">
+                    <div class="empty-icon">📭</div>
+                    <div class="empty-text">No tienes citas programadas para hoy</div>
+                </div>
+            </div>
+
+            <!-- Solicitudes pendientes -->
+            <div class="section">
+                <div class="section-header">
+                    <span class="section-title">Solicitudes pendientes</span>
+                    <span class="pending-badge"
+                          th:text="${pendingRequests.size()} + ' nuevas'"
+                          th:if="${!pendingRequests.isEmpty()}">2 nuevas</span>
+                </div>
+
+                <div class="request-list" th:if="${!pendingRequests.isEmpty()}">
+                    <div class="request-card"
+                         th:each="req : ${pendingRequests}">
+
+                        <div class="request-header">
+                            <span class="request-patient"
+                                  th:text="${req.paciente.nombre}">Ana García</span>
+                            <span class="request-date"
+                                  th:text="${#temporals.format(req.fechaPreferida, 'd MMM, HH:mm')}">
+                                16 May, 10:00
+                            </span>
+                        </div>
+
+                        <div class="request-reason"
+                             th:text="${req.razon}">Motivo de la consulta</div>
+
+                        <div class="request-actions">
+                            <!-- Aceptar -->
+                            <button type="button"
+                                    class="btn-accept js-open-quick-accept"
+                                    th:data-id="${req.id}"
+                                    th:data-preferida="${#temporals.format(req.fechaPreferida, 'yyyy-MM-dd''T''HH:mm')}">✓ Aceptar</button>
+
+                            <!-- Rechazar -->
+                            <form th:action="@{/doctor/requests/{id}/reject(id=${req.id})}"
+                                  method="post" style="flex:1">
+                                <button type="submit" class="btn-reject">✗ Rechazar</button>
+                            </form>
+
+                            <!-- Ver más info -->
+                            <button type="button"
+                                    class="btn-info js-open-modal"
+                                    th:data-id="${req.id}"
+                                    th:data-paciente="${req.paciente.nombre}"
+                                    th:data-razon="${req.razon}"
+                                    th:data-preferida="${#temporals.format(req.fechaPreferida, 'yyyy-MM-dd''T''HH:mm')}"
+                                    th:data-alt1="${req.fechaAlterna != null and !req.fechaAlterna.isEmpty() ? #temporals.format(req.fechaAlterna[0], 'yyyy-MM-dd') : ''}"
+                                    th:data-alt2="${req.fechaAlterna != null and req.fechaAlterna.size() > 1 ? #temporals.format(req.fechaAlterna[1], 'yyyy-MM-dd') : ''}"
+                                    th:data-enfermedad="${req.paciente.historialMedico != null and req.paciente.historialMedico.enfermedadPrincipal != null ? req.paciente.historialMedico.enfermedadPrincipal : ''}">···</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="empty-state" th:if="${pendingRequests.isEmpty()}">
+                    <div class="empty-icon">✅</div>
+                    <div class="empty-text">No hay solicitudes pendientes</div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</main>
+<!-- ── Modal: detalle de solicitud ───────────────────────────────────────── -->
+<div class="modal-backdrop" id="requestModal" onclick="closeModalOnBackdrop(event)">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+
+        <div class="modal-header">
+            <div>
+                <div class="modal-title" id="modalTitle">Solicitud de cita</div>
+                <div class="modal-subtitle" id="modalSubtitle">Revisa los detalles y confirma</div>
+            </div>
+            <button class="modal-close" onclick="closeModal()" aria-label="Cerrar">✕</button>
+        </div>
+
+        <div class="modal-body">
+
+            <!-- Info básica del paciente -->
+            <div class="modal-info-grid">
+                <div class="modal-info-item">
+                    <div class="modal-info-label">Paciente</div>
+                    <div class="modal-info-value" id="modalPatient">—</div>
+                </div>
+                <div class="modal-info-item">
+                    <div class="modal-info-label">Enfermedad principal</div>
+                    <div class="modal-info-value" id="modalIllness">—</div>
+                </div>
+                <div class="modal-info-item full">
+                    <div class="modal-info-label">Motivo de consulta</div>
+                    <div class="modal-info-value" id="modalReason">—</div>
+                </div>
+            </div>
+
+            <!-- Selector de fecha -->
+            <div>
+                <div class="modal-section-label">📅 Elige la fecha de la cita</div>
+                <div class="date-options" id="dateOptions">
+                    <!-- Se rellena por JS -->
+                </div>
+            </div>
+
+            <!-- Sala -->
+            <div>
+                <div class="modal-section-label">🚪 Sala asignada</div>
+                <input type="text" class="modal-input" id="modalRoom"
+                       placeholder="Ej: Sala 3, Consulta A…" maxlength="60"/>
+            </div>
+
+        </div>
+
+        <div class="modal-footer">
+            <button class="modal-btn-cancel" onclick="closeModal()">Cancelar</button>
+            <button class="modal-btn-accept" onclick="submitAccept()">✓ Aceptar cita</button>
+        </div>
+
+        <!-- Formulario oculto que se envía al aceptar -->
+        <form id="modalAcceptForm" method="post" style="display:none">
+            <input type="hidden" name="fechaSeleccionada" id="hiddenFecha"/>
+            <input type="hidden" name="sala"             id="hiddenSala"/>
+        </form>
+
+    </div>
+</div>
+
+<script>
+    let _currentRequestId = null;
+
+    function formatDateLabel(iso, withTime) {
+        if (!iso) return null;
+        const normalized = iso.includes('T') ? iso : iso + 'T00:00';
+        const d = new Date(normalized);
+        if (isNaN(d)) return null;
+        const opts = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+        if (withTime) { opts.hour = '2-digit'; opts.minute = '2-digit'; }
+        return d.toLocaleDateString('es-ES', opts);
+    }
+
+    function toJavaLocalDateTime(iso) {
+        if (!iso.includes('T')) return iso + 'T12:00:00';
+        return iso.length === 16 ? iso + ':00' : iso;
+    }
+
+    // Los datos llegan desde atributos data-* del botón (seguro en Thymeleaf 3.1+)
+    document.addEventListener('click', function(e) {
+        const btn = e.target.closest('.js-open-modal');
+        if (!btn) return;
+
+        const id        = btn.dataset.id;
+        const patient   = btn.dataset.paciente;
+        const reason    = btn.dataset.razon;
+        const preferred = btn.dataset.preferida;
+        const alt1      = btn.dataset.alt1;
+        const alt2      = btn.dataset.alt2;
+        const illness   = btn.dataset.enfermedad;
+
+        _currentRequestId = id;
+
+        document.getElementById('modalPatient').textContent  = patient  || '—';
+        document.getElementById('modalReason').textContent   = reason   || '—';
+        document.getElementById('modalIllness').textContent  = illness  || 'No especificada';
+        document.getElementById('modalSubtitle').textContent = 'Solicitud #' + id;
+        document.getElementById('modalRoom').value = '';
+
+        const container = document.getElementById('dateOptions');
+        container.innerHTML = '';
+
+        const dates = [
+            { iso: preferred, label: formatDateLabel(preferred, true),  tag: 'Preferida',     pref: true  },
+            { iso: alt1,      label: formatDateLabel(alt1,      false), tag: 'Alternativa 1', pref: false },
+            { iso: alt2,      label: formatDateLabel(alt2,      false), tag: 'Alternativa 2', pref: false },
+        ].filter(d => d.iso && d.label);
+
+        dates.forEach((d, i) => {
+            const opt = document.createElement('label');
+            opt.className = 'date-option';
+            opt.innerHTML =
+                '<input type="radio" name="fechaModal" value="' + d.iso + '" ' + (i === 0 ? 'checked' : '') + '/>' +
+                '<span class="date-option-label">' + d.label + '</span>' +
+                '<span class="date-option-badge ' + (d.pref ? 'preferred' : '') + '">' + d.tag + '</span>';
+            container.appendChild(opt);
+        });
+
+        if (dates.length === 0) {
+            container.innerHTML = '<p style="font-size:.82rem;color:var(--ink-light)">No se especificaron fechas.</p>';
+        }
+
+        document.getElementById('requestModal').classList.add('open');
+        document.body.style.overflow = 'hidden';
+    });
+
+    function closeModal() {
+        document.getElementById('requestModal').classList.remove('open');
+        document.body.style.overflow = '';
+        _currentRequestId = null;
+    }
+
+    function closeModalOnBackdrop(e) {
+        if (e.target === document.getElementById('requestModal')) closeModal();
+    }
+
+    function submitAccept() {
+        const selected = document.querySelector('input[name="fechaModal"]:checked');
+        const sala     = document.getElementById('modalRoom').value.trim();
+
+        if (!selected) {
+            alert('Por favor selecciona una fecha.');
+            return;
+        }
+        if (!sala) {
+            const input = document.getElementById('modalRoom');
+            input.focus();
+            input.style.borderColor = 'var(--red)';
+            setTimeout(() => input.style.borderColor = '', 1500);
+            return;
+        }
+
+        const form = document.getElementById('modalAcceptForm');
+        form.action = '/doctor/requests/' + _currentRequestId + '/accept';
+        document.getElementById('hiddenFecha').value = toJavaLocalDateTime(selected.value);
+        document.getElementById('hiddenSala').value  = sala;
+        form.submit();
+    }
+
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape') closeModal();
+    });
+</script>
+
+<!-- ── Modal: aceptar rápido (solo sala) ──────────────────────────────────── -->
+<div class="modal-backdrop" id="quickAcceptModal" onclick="closeQuickModalOnBackdrop(event)">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="quickModalTitle">
+
+        <div class="modal-header">
+            <div>
+                <div class="modal-title" id="quickModalTitle">Aceptar solicitud</div>
+                <div class="modal-subtitle" id="quickModalSubtitle">Especifica la sala para confirmar</div>
+            </div>
+            <button class="modal-close" onclick="closeQuickModal()" aria-label="Cerrar">✕</button>
+        </div>
+
+        <div class="modal-body">
+            <div class="modal-info-grid">
+                <div class="modal-info-item full">
+                    <div class="modal-info-label">Fecha de la cita</div>
+                    <div class="modal-info-value" id="quickModalFecha">—</div>
+                </div>
+            </div>
+            <div>
+                <div class="modal-section-label">🚪 Sala asignada</div>
+                <input type="text" class="modal-input" id="quickModalRoom"
+                       placeholder="Ej: Sala 3, Consulta A…" maxlength="60"/>
+            </div>
+        </div>
+
+        <div class="modal-footer">
+            <button class="modal-btn-cancel" onclick="closeQuickModal()">Cancelar</button>
+            <button class="modal-btn-accept" onclick="submitQuickAccept()">✓ Aceptar cita</button>
+        </div>
+
+        <form id="quickAcceptForm" method="post" style="display:none">
+            <input type="hidden" name="fechaSeleccionada" id="quickHiddenFecha"/>
+            <input type="hidden" name="sala"              id="quickHiddenSala"/>
+        </form>
+
+    </div>
+</div>
+
+<script>
+    let _quickRequestId   = null;
+    let _quickFechaIso    = null;
+
+    document.addEventListener('click', function(e) {
+        const btn = e.target.closest('.js-open-quick-accept');
+        if (!btn) return;
+
+        _quickRequestId = btn.dataset.id;
+        _quickFechaIso  = btn.dataset.preferida;
+
+        // Formatear fecha para mostrar
+        const normalized = _quickFechaIso.includes('T') ? _quickFechaIso : _quickFechaIso + 'T00:00';
+        const d = new Date(normalized);
+        const label = isNaN(d) ? _quickFechaIso : d.toLocaleDateString('es-ES', {
+            weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+            hour: '2-digit', minute: '2-digit'
+        });
+
+        document.getElementById('quickModalSubtitle').textContent = 'Solicitud #' + _quickRequestId;
+        document.getElementById('quickModalFecha').textContent    = label;
+        document.getElementById('quickModalRoom').value           = '';
+
+        document.getElementById('quickAcceptModal').classList.add('open');
+        document.body.style.overflow = 'hidden';
+    });
+
+    function closeQuickModal() {
+        document.getElementById('quickAcceptModal').classList.remove('open');
+        document.body.style.overflow = '';
+        _quickRequestId = null;
+        _quickFechaIso  = null;
+    }
+
+    function closeQuickModalOnBackdrop(e) {
+        if (e.target === document.getElementById('quickAcceptModal')) closeQuickModal();
+    }
+
+    function submitQuickAccept() {
+        const sala = document.getElementById('quickModalRoom').value.trim();
+        if (!sala) {
+            const input = document.getElementById('quickModalRoom');
+            input.focus();
+            input.style.borderColor = 'var(--red)';
+            setTimeout(() => input.style.borderColor = '', 1500);
+            return;
+        }
+
+        // Convertir a formato que espera LocalDateTime.parse()
+        let fecha = _quickFechaIso;
+        if (!fecha.includes('T')) fecha = fecha + 'T12:00:00';
+        else if (fecha.length === 16) fecha = fecha + ':00';
+
+        const form = document.getElementById('quickAcceptForm');
+        form.action = '/doctor/requests/' + _quickRequestId + '/accept';
+        document.getElementById('quickHiddenFecha').value = fecha;
+        document.getElementById('quickHiddenSala').value  = sala;
+        form.submit();
+    }
+
+    // Cerrar ambos modales con Escape ya está cubierto por el listener anterior
+</script>
+
+</body>
+</html>
